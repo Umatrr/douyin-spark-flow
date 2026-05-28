@@ -58,24 +58,6 @@ def sanitize_cookies(cookies):
     return cookies
 
 
-def get_raw_cookies():
-    """从环境变量获取原始cookie字符串（用于base64编码的cookie）"""
-    import base64
-    raw = os.getenv("COOKIES_FENGZHUORAN_B64", "")
-    if raw:
-        try:
-            decoded = base64.b64decode(raw).decode("utf-8")
-            return json.loads(decoded)
-        except Exception as e:
-            logger.warning(f"Base64 cookie decode failed: {e}, trying plain")
-    # Fallback: 尝试直接读取（兼容旧格式）
-    raw_plain = os.getenv("COOKIES_FENGZHUORAN", "[]")
-    try:
-        return json.loads(raw_plain)
-    except:
-        return []
-
-
 def get_userData():
     global userData
 
@@ -93,14 +75,14 @@ def get_userData():
             logger.warning(f"{username} 的任务缺少 unique_id 字段，已跳过")
             continue
         
-        # 读取COOKIES_FENGZHUORAN环境变量（GitHub Secrets会自动转为大写+下划线格式）
-        # GitHub: COOKIES_FENGZHUORAN -> env var: COOKIES__FENGZHUORAN
-        cookies_env = os.getenv("COOKIES__FENGZHUORAN") or os.getenv("COOKIES_FENGZHUORAN") or "[]"
+        # GitHub Secrets stores this as COOKIES_FENGZHUORAN
+        # export_github_env.py converts it to .env format
+        cookies_raw = os.getenv("COOKIES_FENGZHUORAN", "[]")
         
         try:
-            cookies = json.loads(cookies_env)
+            cookies = json.loads(cookies_raw)
         except json.JSONDecodeError:
-            logger.warning(f"{username} 的 cookies 格式不正确，已跳过")
+            logger.warning(f"{username} 的 cookies 格式不正确，已跳过: {cookies_raw[:50]}")
             continue
 
         if not cookies:
